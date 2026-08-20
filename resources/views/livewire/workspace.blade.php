@@ -3,7 +3,6 @@
         <div><p class="text-sm text-zinc-500">Workspace</p><h1 class="text-3xl font-semibold">Falqo</h1></div>
         @if($activeTimer)<flux:button wire:click="stopTimer" variant="danger">Stop · {{ $activeTimer->project->name }}</flux:button>@endif
     </div>
-    <div class="flex flex-wrap gap-2">@foreach(['overview'=>'Overview','customers'=>'Customers','projects'=>'Projects','tickets'=>'Tickets','tasks'=>'Tasks','time'=>'Time tracker'] as $key=>$label)<flux:button wire:click="$set('section','{{ $key }}')" :variant="$section === '{{ $key }}' ? 'primary' : 'ghost'">{{ $label }}</flux:button>@endforeach</div>
     @if($errors->any())<flux:callout variant="danger">{{ $errors->first() }}</flux:callout>@endif
 
     @if($section === 'overview')

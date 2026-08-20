@@ -4,10 +4,12 @@ namespace App\Livewire;
 
 use App\Models\{Customer, Project, Task, Ticket, TimeEntry};
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Workspace extends Component
 {
+    #[Url]
     public string $section = 'overview';
     public string $name = '', $email = '', $title = '', $description = '', $priority = 'normal';
     public ?int $customerId = null, $projectId = null, $taskId = null;
