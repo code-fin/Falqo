@@ -10,6 +10,7 @@
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-brand: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -23,17 +24,17 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-falqo-50: #fdf6f3;
-    --color-falqo-100: #f9e8e1;
-    --color-falqo-200: #f2cfc2;
-    --color-falqo-300: #e8aa93;
-    --color-falqo-400: #d97f5f;
-    --color-falqo-500: #bd603f;
-    --color-falqo-600: #9a4f36;
-    --color-falqo-700: #7d402e;
-    --color-falqo-800: #67372a;
-    --color-falqo-900: #562f26;
-    --color-falqo-950: #2f1712;
+    --color-falqo-50: #eef3ff;
+    --color-falqo-100: #dce6ff;
+    --color-falqo-200: #b9cdff;
+    --color-falqo-300: #8eaeff;
+    --color-falqo-400: #6289f4;
+    --color-falqo-500: #4168e0;
+    --color-falqo-600: #2952cc;
+    --color-falqo-700: #2143a8;
+    --color-falqo-800: #1f3987;
+    --color-falqo-900: #1e326b;
+    --color-falqo-950: #142047;
 
     --color-accent: var(--color-falqo-600);
     --color-accent-content: var(--color-falqo-700);
@@ -89,4 +90,6 @@ select:focus[data-flux-control] {
     .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.14em] text-falqo-600 dark:text-falqo-400; }
     .stat-card { @apply relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-zinc-900 dark:shadow-black/20; }
     .status-dot { @apply size-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px] shadow-emerald-500/10; }
+    [data-flux-sidebar-brand].brand-wordmark > div:last-of-type,
+    [data-flux-brand].brand-wordmark > div:last-of-type { font-family: var(--font-brand); font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
 }
