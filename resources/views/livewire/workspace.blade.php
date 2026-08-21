@@ -11,26 +11,20 @@
 @endphp
 
 <div class="min-h-screen" wire:poll.15s>
-    <header class="sticky top-0 z-10 border-b border-zinc-200/70 bg-zinc-50/85 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/85">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-            <div class="min-w-0"><p class="eyebrow">Falqo workspace</p><h1 class="truncate text-xl font-semibold tracking-tight sm:text-2xl">{{ $pageTitle }}</h1></div>
-            <div class="flex items-center gap-2">
+    <main class="mx-auto max-w-7xl space-y-7 px-5 py-7 sm:px-8 sm:py-9">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div><h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">{{ $pageTitle }}</h2><p class="mt-1 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">{{ $pageDescription }}</p></div>
+            <div class="flex flex-wrap items-center gap-2">
                 @if($activeTimer)
                     <div class="hidden items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 sm:flex dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"><span class="status-dot"></span><span class="max-w-40 truncate">{{ $activeTimer->project->name }}</span></div>
                     <flux:button wire:click="stopTimer" variant="danger" icon="stop">Stop timer</flux:button>
                 @else
-                    <flux:modal.trigger name="start-timer"><flux:button variant="primary" icon="play">Start timer</flux:button></flux:modal.trigger>
+                    <flux:modal.trigger name="start-timer"><flux:button variant="ghost" icon="play">Start timer</flux:button></flux:modal.trigger>
+                @endif
+                @if($section !== 'overview' && $section !== 'time')
+                    <flux:modal.trigger name="create-{{ rtrim($section, 's') }}"><flux:button variant="primary" icon="plus">New {{ rtrim($section, 's') }}</flux:button></flux:modal.trigger>
                 @endif
             </div>
-        </div>
-    </header>
-
-    <main class="mx-auto max-w-7xl space-y-7 px-5 py-7 sm:px-8 sm:py-9">
-        <div class="flex flex-wrap items-end justify-between gap-4">
-            <div><h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">{{ $pageTitle }}</h2><p class="mt-1 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">{{ $pageDescription }}</p></div>
-            @if($section !== 'overview' && $section !== 'time')
-                <flux:modal.trigger name="create-{{ rtrim($section, 's') }}"><flux:button variant="primary" icon="plus">New {{ rtrim($section, 's') }}</flux:button></flux:modal.trigger>
-            @endif
         </div>
 
         @if($errors->any())<flux:callout variant="danger" icon="exclamation-triangle" heading="Something needs your attention">{{ $errors->first() }}</flux:callout>@endif

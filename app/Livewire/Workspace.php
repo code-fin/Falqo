@@ -46,7 +46,7 @@ class Workspace extends Component
     public function addCustomer(): void
     {
         $data = $this->validate(['name' => 'required|max:120', 'email' => 'nullable|email']);
-        $this->customers()->create($data);
+        Customer::create([...$data, 'user_id' => auth()->id()]);
         $this->reset('name', 'email');
         Flux::modal('create-customer')->close();
         Flux::toast('Customer added', variant: 'success');
