@@ -1,33 +1,43 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-zinc-50 text-zinc-950 antialiased dark:bg-zinc-950 dark:text-white">
+        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/90">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
+                <flux:sidebar.group :heading="__('Workspace')" class="grid">
+                    @php($activeSection = request()->query('section', 'overview'))
+                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="$activeSection === 'overview'" wire:navigate>{{ __('Overview') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('dashboard', ['section' => 'customers'])" :current="$activeSection === 'customers'" wire:navigate>{{ __('Customers') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="folder" :href="route('dashboard', ['section' => 'projects'])" :current="$activeSection === 'projects'" wire:navigate>{{ __('Projects') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="ticket" :href="route('dashboard', ['section' => 'tickets'])" :current="$activeSection === 'tickets'" wire:navigate>{{ __('Tickets') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="check-circle" :href="route('dashboard', ['section' => 'tasks'])" :current="$activeSection === 'tasks'" wire:navigate>{{ __('Tasks') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="clock" :href="route('dashboard', ['section' => 'time'])" :current="$activeSection === 'time'" wire:navigate>{{ __('Time tracker') }}</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
+
+            <div class="mx-2 mb-3 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-2 dark:border-white/10 dark:bg-white/5">
+                <div class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{{ __('Appearance') }}</div>
+                <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm">
+                    <flux:radio value="light" icon="sun" :label="__('Light')" />
+                    <flux:radio value="dark" icon="moon" :label="__('Dark')" />
+                    <flux:radio value="system" icon="computer-desktop" :label="__('Auto')" />
+                </flux:radio.group>
+            </div>
 
             <flux:spacer />
 
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
+                <flux:sidebar.item icon="folder-git-2" href="https://github.com/code-fin/Falqo" target="_blank">
                     {{ __('Repository') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
             </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
