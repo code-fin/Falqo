@@ -58,6 +58,8 @@ class Workspace extends Component
 
     public ?int $ticketId = null;
 
+    public ?int $timeEntryId = null;
+
     public ?int $assignedUserId = null;
 
     public bool $timeBookmarked = true;
@@ -261,10 +263,27 @@ class Workspace extends Component
         $ticket = $this->timeTickets()->findOrFail($ticketId);
         $this->ticketId = $ticket->id;
         $this->entryDate = $date;
-        $minutes = TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereDate('started_at', $date)->whereNotNull('booked_at')->get()->sum->minutes;
-        $this->entryHours = intdiv($minutes, 60);
-        $this->entryMinutes = $minutes % 60;
+        $this->prepareNewTimeEntry();
+        Flux::modal('log-ticket-time')->show();
+    }
+
+    public function prepareNewTimeEntry(): void
+    {
+        $this->timeEntryId = null;
+        $this->entryHours = 0;
+        $this->entryMinutes = 0;
         $this->description = '';
+    }
+
+    public function editTimeEntry(int $entryId): void
+    {
+        $entry = TimeEntry::where('user_id', auth()->id())->whereNotNull('booked_at')->findOrFail($entryId);
+        $this->ticketId = $entry->ticket_id;
+        $this->entryDate = $entry->started_at->toDateString();
+        $this->timeEntryId = $entry->id;
+        $this->entryHours = intdiv($entry->minutes, 60);
+        $this->entryMinutes = $entry->minutes % 60;
+        $this->description = $entry->description ?? '';
         Flux::modal('log-ticket-time')->show();
     }
 
@@ -283,11 +302,17 @@ class Workspace extends Component
 
             return;
         }
-        TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereDate('started_at', $this->entryDate)->whereNotNull('booked_at')->delete();
-        $startedAt = Carbon::parse($this->entryDate)->setTime(9, 0);
-        TimeEntry::create(['user_id' => auth()->id(), 'project_id' => $ticket->project_id, 'ticket_id' => $ticket->id, 'description' => $this->description, 'started_at' => $startedAt, 'ended_at' => $startedAt->copy()->addMinutes($duration), 'booked_at' => now()]);
+        if ($this->timeEntryId) {
+            $entry = TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereNotNull('booked_at')->findOrFail($this->timeEntryId);
+            $startedAt = $entry->started_at;
+            $entry->update(['description' => $this->description, 'ended_at' => $startedAt->copy()->addMinutes($duration)]);
+        } else {
+            $existingMinutes = TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereDate('started_at', $this->entryDate)->whereNotNull('booked_at')->get()->sum->minutes;
+            $startedAt = Carbon::parse($this->entryDate)->setTime(9, 0)->addMinutes($existingMinutes);
+            TimeEntry::create(['user_id' => auth()->id(), 'project_id' => $ticket->project_id, 'ticket_id' => $ticket->id, 'description' => $this->description, 'started_at' => $startedAt, 'ended_at' => $startedAt->copy()->addMinutes($duration), 'booked_at' => now()]);
+        }
         Flux::modal('log-ticket-time')->close();
-        Flux::toast('Time booked', variant: 'success');
+        Flux::toast($this->timeEntryId ? 'Time entry updated' : 'Time entry added', variant: 'success');
     }
 
     public function startTicketTimer(int $ticketId): void
@@ -363,7 +388,8 @@ class Workspace extends Component
         $shownTicket = $this->section === 'ticket' ? $this->tickets()->with(['customer', 'project', 'assignedUser', 'timeEntries'])->find($this->showId) : null;
         $upcomingTasks = $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done)->filter(fn (Task $task) => $task->due_date?->between(today(), today()->addDays(14)))->take(6);
         $bookedDays = $entries->groupBy(fn (TimeEntry $entry) => $entry->started_at->toDateString())->take(7);
+        $selectedTimeEntries = ($this->ticketId && $this->entryDate) ? TimeEntry::where('user_id', auth()->id())->where('ticket_id', $this->ticketId)->whereDate('started_at', $this->entryDate)->whereNotNull('booked_at')->orderBy('started_at')->get() : collect();
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'availableTimeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'availableTimeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays', 'selectedTimeEntries') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
     }
 }
