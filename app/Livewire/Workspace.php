@@ -230,6 +230,14 @@ class Workspace extends Component
         $ticket->update(['time_bookmarked' => ! $ticket->time_bookmarked]);
     }
 
+    public function bookmarkTicketForTime(int $ticketId): void
+    {
+        $ticket = $this->tickets()->where('assigned_user_id', auth()->id())->findOrFail($ticketId);
+        $ticket->update(['time_bookmarked' => true]);
+        Flux::modal('add-time-ticket')->close();
+        Flux::toast('Ticket added to time tracker', variant: 'success');
+    }
+
     public function selectCalendarDay(string $date): void
     {
         $this->selectedDay = $date;
@@ -338,6 +346,7 @@ class Workspace extends Component
         $visibleTasks = $this->showCompletedTasks ? $tasks : $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done);
         $tickets = $this->tickets()->with(['customer', 'project', 'assignedUser'])->get()->sortByDesc(fn (Ticket $ticket) => $this->ticketOrder === 'priority' ? $ticket->priority->weight() : $ticket->created_at->timestamp)->values();
         $timeTickets = $this->timeTickets()->with(['customer', 'project'])->get();
+        $availableTimeTickets = $this->tickets()->where('assigned_user_id', auth()->id())->where('time_bookmarked', false)->with(['customer', 'project'])->get();
         $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->whereNotNull('booked_at')->latest('started_at')->take(50)->get();
         $activeTimer = TimeEntry::with('ticket')->where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first();
         $pausedTimer = TimeEntry::with('ticket')->where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->first();
@@ -355,6 +364,6 @@ class Workspace extends Component
         $upcomingTasks = $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done)->filter(fn (Task $task) => $task->due_date?->between(today(), today()->addDays(14)))->take(6);
         $bookedDays = $entries->groupBy(fn (TimeEntry $entry) => $entry->started_at->toDateString())->take(7);
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'availableTimeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
     }
 }
