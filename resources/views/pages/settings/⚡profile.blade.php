@@ -80,7 +80,7 @@ new #[Title('Profile settings')] class extends Component {
     /* @end-chisel-email-verification */
 }; ?>
 
-<section class="w-full">
+<section class="mx-auto w-full max-w-7xl space-y-7 px-5 py-7 sm:px-8 sm:py-9">
     @include('partials.settings-heading')
 
     <flux:heading class="sr-only">{{ __('Profile settings') }}</flux:heading>
