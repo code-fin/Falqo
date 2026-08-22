@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Enums\ProjectCategory;
 use App\Enums\TaskStatus;
 use App\Enums\TicketCategory;
 use App\Models\CalendarEvent;
@@ -53,6 +54,8 @@ class Workspace extends Component
     public int $estimatedMinutes = 0;
 
     public string $projectIcon = 'folder';
+
+    public string $projectCategory = 'development';
 
     public string $status = 'todo';
 
@@ -167,10 +170,10 @@ class Workspace extends Component
 
     public function addProject(): void
     {
-        $this->validate(['name' => 'required|max:160', 'customerId' => 'required|integer', 'description' => 'nullable|max:2000', 'projectIcon' => 'required|in:folder,globe-alt,shopping-bag,rocket-launch,paint-brush,code-bracket,megaphone,chart-bar,building-office,briefcase,light-bulb,wrench-screwdriver']);
+        $this->validate(['name' => 'required|max:160', 'customerId' => 'required|integer', 'description' => 'nullable|max:2000', 'projectCategory' => 'required|in:'.implode(',', array_column(ProjectCategory::cases(), 'value')), 'projectIcon' => 'required|in:folder,globe-alt,shopping-bag,rocket-launch,paint-brush,code-bracket,megaphone,chart-bar,building-office,briefcase,light-bulb,wrench-screwdriver']);
         abort_unless($this->customers()->whereKey($this->customerId)->exists(), 403);
-        Project::create(['name' => $this->name, 'icon' => $this->projectIcon, 'customer_id' => $this->customerId, 'description' => $this->description]);
-        $this->reset('name', 'customerId', 'description');
+        Project::create(['name' => $this->name, 'icon' => $this->projectIcon, 'category' => $this->projectCategory, 'customer_id' => $this->customerId, 'description' => $this->description]);
+        $this->reset('name', 'customerId', 'description', 'projectCategory');
         $this->projectIcon = 'folder';
         Flux::modal('create-project')->close();
         Flux::toast('Project created', variant: 'success');

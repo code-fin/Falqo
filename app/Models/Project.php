@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectCategory;
 use App\Enums\ProjectStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ class Project extends Model
 
     protected function casts(): array
     {
-        return ['due_date' => 'date', 'hourly_rate' => 'decimal:2', 'status' => ProjectStatus::class];
+        return ['category' => ProjectCategory::class, 'due_date' => 'date', 'hourly_rate' => 'decimal:2', 'status' => ProjectStatus::class];
     }
 
     public function customer(): BelongsTo

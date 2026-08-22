@@ -54,7 +54,7 @@ class DemoWorkspaceSeeder extends Seeder
         $projectIcons = ['paint-brush', 'shopping-bag', 'code-bracket', 'building-office', 'megaphone'];
         $projects = collect($projectData)->map(fn (array $data, int $index) => Project::updateOrCreate(
             ['customer_id' => $customers[$data[0]]->id, 'name' => $data[1]],
-            ['icon' => $projectIcons[$index], 'description' => $data[2], 'status' => 'active', 'due_date' => now()->addDays(random_int(20, 90))],
+            ['icon' => $projectIcons[$index], 'category' => ['design', 'development', 'support', 'development', 'marketing'][$index], 'description' => $data[2], 'status' => 'active', 'due_date' => now()->addDays(random_int(20, 90))],
         ));
 
         $taskTitles = [

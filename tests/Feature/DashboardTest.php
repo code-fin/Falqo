@@ -79,6 +79,21 @@ class DashboardTest extends TestCase
         ]);
     }
 
+    public function test_user_can_create_a_project_with_a_work_category(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+
+        Livewire::actingAs($user)->test(Workspace::class)
+            ->set('name', 'Mobile application')
+            ->set('customerId', $customer->id)
+            ->set('projectCategory', 'development')
+            ->call('addProject')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('projects', ['name' => 'Mobile application', 'category' => 'development']);
+    }
+
     public function test_user_can_log_time_against_their_ticket(): void
     {
         $user = User::factory()->create();
