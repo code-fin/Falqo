@@ -44,7 +44,6 @@
 /* Week navigation keeps the tracker mounted and masks only changing values. */
 .timesheet-week-loading section:has(.time-entry-cell) h3,
 .timesheet-week-loading .timesheet-date,
-.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child),
 .timesheet-week-loading .time-entry-cell {
     position: relative;
     color: transparent !important;
@@ -56,7 +55,6 @@
 
 .timesheet-week-loading section:has(.time-entry-cell) h3::after,
 .timesheet-week-loading .timesheet-date::after,
-.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
 .timesheet-week-loading .time-entry-cell::after {
     position: absolute;
     inset: 50% auto auto 50%;
@@ -79,7 +77,6 @@
 
 .dark .timesheet-week-loading section:has(.time-entry-cell) h3::after,
 .dark .timesheet-week-loading .timesheet-date::after,
-.dark .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
 .dark .timesheet-week-loading .time-entry-cell::after {
     background: rgb(255 255 255 / 18%);
 }
@@ -87,7 +84,6 @@
 @media (prefers-reduced-motion: reduce) {
     .timesheet-week-loading section:has(.time-entry-cell) h3::after,
     .timesheet-week-loading .timesheet-date::after,
-    .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
     .timesheet-week-loading .time-entry-cell::after {
         animation: none;
     }
