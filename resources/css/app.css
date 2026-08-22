@@ -41,10 +41,9 @@
     --color-accent-foreground: var(--color-white);
 }
 
-/* Keep bookmarked tickets immediately recognizable in dense tables. */
 /* Week navigation keeps the tracker mounted and masks only changing values. */
 .timesheet-week-loading section:has(.time-entry-cell) h3,
-.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child),
+.timesheet-week-loading .timesheet-date,
 .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child),
 .timesheet-week-loading .time-entry-cell {
     position: relative;
@@ -56,7 +55,7 @@
 }
 
 .timesheet-week-loading section:has(.time-entry-cell) h3::after,
-.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+.timesheet-week-loading .timesheet-date::after,
 .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
 .timesheet-week-loading .time-entry-cell::after {
     position: absolute;
@@ -79,7 +78,7 @@
 }
 
 .dark .timesheet-week-loading section:has(.time-entry-cell) h3::after,
-.dark .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+.dark .timesheet-week-loading .timesheet-date::after,
 .dark .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
 .dark .timesheet-week-loading .time-entry-cell::after {
     background: rgb(255 255 255 / 18%);
@@ -87,7 +86,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .timesheet-week-loading section:has(.time-entry-cell) h3::after,
-    .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+    .timesheet-week-loading .timesheet-date::after,
     .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
     .timesheet-week-loading .time-entry-cell::after {
         animation: none;
@@ -121,6 +120,8 @@
     button:not(:disabled) { @apply transition duration-150; }
     button:not(:disabled):hover { background-image: linear-gradient(rgb(0 0 0 / 0.07), rgb(0 0 0 / 0.07)); background-blend-mode: multiply; }
     .dark button:not(:disabled):hover { background-image: linear-gradient(rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.10)); background-blend-mode: screen; }
+    button[aria-label="Remove bookmark"]:hover,
+    button[aria-label="Bookmark for time"]:hover { background-image: none !important; background-color: transparent !important; }
     button.time-entry-cell:hover { background-image: none !important; background-blend-mode: normal !important; }
     [data-flux-radio] { @apply cursor-pointer; }
     ::selection { @apply bg-falqo-200 text-falqo-950 dark:bg-falqo-700 dark:text-white; }
