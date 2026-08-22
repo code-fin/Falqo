@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Livewire\Workspace;
+use App\Models\CalendarEvent;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\User;
 use Database\Seeders\DemoWorkspaceSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -152,5 +155,37 @@ class DashboardTest extends TestCase
         $this->assertDatabaseCount('tickets', 10);
         $this->assertDatabaseHas('tasks', ['title' => 'Prepare homepage wireframes']);
         $this->assertDatabaseHas('time_entries', ['user_id' => User::where('email', 'test@example.com')->value('id')]);
+    }
+
+    public function test_user_can_create_a_company_event_with_multiple_attendees(): void
+    {
+        $company = Company::create(['name' => 'Acme']);
+        $owner = User::factory()->create(['company_id' => $company->id]);
+        $employees = User::factory()->count(2)->create(['company_id' => $company->id]);
+
+        Livewire::actingAs($owner)->test(Workspace::class, ['section' => 'calendar'])
+            ->set('title', 'Planning session')
+            ->set('startsAt', now()->addDay()->format('Y-m-d\TH:i'))
+            ->set('isPublic', true)
+            ->set('attendeeIds', $employees->pluck('id')->all())
+            ->call('saveEvent')
+            ->assertHasNoErrors();
+
+        $event = CalendarEvent::where('title', 'Planning session')->firstOrFail();
+        $this->assertTrue($event->is_public);
+        $this->assertCount(2, $event->attendees);
+    }
+
+    public function test_company_roles_are_scoped_and_expandable(): void
+    {
+        $company = Company::create(['name' => 'Acme']);
+        $owner = User::factory()->create(['company_id' => $company->id]);
+        $employee = User::factory()->create(['company_id' => $company->id]);
+
+        $this->seed(RoleSeeder::class);
+        setPermissionsTeamId($company->id);
+
+        $this->assertTrue($owner->fresh()->hasRole('owner'));
+        $this->assertTrue($employee->fresh()->hasRole('employee'));
     }
 }

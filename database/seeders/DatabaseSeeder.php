@@ -20,6 +20,6 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Test User', 'password' => bcrypt('password'), 'email_verified_at' => now()],
         );
 
-        $this->call(DemoWorkspaceSeeder::class);
+        $this->call([DemoWorkspaceSeeder::class, RoleSeeder::class]);
     }
 }

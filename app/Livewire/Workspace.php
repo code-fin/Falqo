@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\TaskStatus;
+use App\Models\CalendarEvent;
 use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Task;
@@ -23,9 +24,6 @@ class Workspace extends Component
 
     #[Url]
     public ?int $showId = null;
-
-    #[Url]
-    public string $taskView = 'month';
 
     #[Url]
     public string $ticketOrder = 'priority';
@@ -67,6 +65,8 @@ class Workspace extends Component
 
     public ?int $timeEntryId = null;
 
+    public ?int $eventId = null;
+
     public ?int $assignedUserId = null;
 
     public bool $timeBookmarked = true;
@@ -82,6 +82,14 @@ class Workspace extends Component
     public int $entryHours = 0;
 
     public int $entryMinutes = 0;
+
+    public string $startsAt = '';
+
+    public string $endsAt = '';
+
+    public bool $isPublic = false;
+
+    public array $attendeeIds = [];
 
     public function mount(): void
     {
@@ -118,7 +126,14 @@ class Workspace extends Component
 
     private function users(): Builder
     {
-        return User::query()->orderBy('name');
+        return User::query()->where('company_id', auth()->user()->company_id)->orderBy('name');
+    }
+
+    private function calendarEvents(): Builder
+    {
+        return CalendarEvent::query()->where('company_id', auth()->user()->company_id)->where(function (Builder $query) {
+            $query->where('created_by', auth()->id())->orWhere('is_public', true)->orWhereHas('attendees', fn (Builder $attendees) => $attendees->whereKey(auth()->id()));
+        });
     }
 
     public function show(string $type, int $id): void
@@ -220,6 +235,41 @@ class Workspace extends Component
         $task->update(['status' => $task->status === TaskStatus::Done ? TaskStatus::Todo->value : TaskStatus::Done->value]);
     }
 
+    public function prepareEvent(?string $date = null): void
+    {
+        $this->reset('eventId', 'title', 'description', 'endsAt', 'isPublic', 'attendeeIds');
+        $this->startsAt = Carbon::parse($date ?: $this->selectedDay)->setTime(9, 0)->format('Y-m-d\TH:i');
+        Flux::modal('event-editor')->show();
+    }
+
+    public function editEvent(int $eventId): void
+    {
+        $event = $this->calendarEvents()->with('attendees')->findOrFail($eventId);
+        abort_unless($event->created_by === auth()->id(), 403);
+        $this->eventId = $event->id;
+        $this->title = $event->title;
+        $this->description = $event->description ?? '';
+        $this->startsAt = $event->starts_at->format('Y-m-d\TH:i');
+        $this->endsAt = $event->ends_at?->format('Y-m-d\TH:i') ?? '';
+        $this->isPublic = $event->is_public;
+        $this->attendeeIds = $event->attendees->pluck('id')->all();
+        Flux::modal('event-editor')->show();
+    }
+
+    public function saveEvent(): void
+    {
+        $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'startsAt' => 'required|date', 'endsAt' => 'nullable|date|after_or_equal:startsAt', 'isPublic' => 'boolean', 'attendeeIds' => 'array', 'attendeeIds.*' => 'integer']);
+        $companyUserIds = $this->users()->whereKey($this->attendeeIds)->pluck('id');
+        abort_unless($companyUserIds->count() === count(array_unique($this->attendeeIds)), 403);
+        $values = ['company_id' => auth()->user()->company_id, 'created_by' => auth()->id(), 'title' => $this->title, 'description' => $this->description ?: null, 'starts_at' => $this->startsAt, 'ends_at' => $this->endsAt ?: null, 'is_public' => $this->isPublic];
+        $event = $this->eventId ? $this->calendarEvents()->where('created_by', auth()->id())->findOrFail($this->eventId) : CalendarEvent::create($values);
+        $event->update($values);
+        $event->attendees()->sync($companyUserIds);
+        Flux::modal('event-editor')->close();
+        Flux::toast($this->eventId ? 'Event updated' : 'Event created', variant: 'success');
+        $this->reset('eventId', 'title', 'description', 'startsAt', 'endsAt', 'isPublic', 'attendeeIds');
+    }
+
     public function addTicket(): void
     {
         $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'customerId' => 'required|integer', 'projectId' => 'nullable|integer', 'assignedUserId' => 'required|integer', 'priority' => 'required|in:low,normal,high,urgent', 'estimatedHours' => 'required|integer|min:0|max:9999', 'estimatedMinutes' => 'required|integer|min:0|max:59']);
@@ -254,10 +304,7 @@ class Workspace extends Component
 
     public function changeTaskPeriod(int $amount): void
     {
-        $date = Carbon::parse($this->calendarDate);
-        $this->calendarDate = (match ($this->taskView) {
-            'day' => $date->addDays($amount), 'week' => $date->addWeeks($amount), default => $date->addMonths($amount)
-        })->toDateString();
+        $this->calendarDate = Carbon::parse($this->calendarDate)->addMonths($amount)->toDateString();
     }
 
     public function changeWeek(int $weeks): void
@@ -396,6 +443,7 @@ class Workspace extends Component
         $weekDays = collect(range(0, 6))->map(fn (int $i) => $weekStart->copy()->addDays($i));
         $weekEntries = TimeEntry::where('user_id', auth()->id())->whereNotNull('booked_at')->whereBetween('started_at', [$weekStart->copy()->startOfDay(), $weekStart->copy()->endOfWeek()->endOfDay()])->get();
         $users = $this->users()->get();
+        $calendarEvents = $this->calendarEvents()->with(['creator', 'attendees'])->whereBetween('starts_at', [$calendarDays->first()->copy()->startOfDay(), $calendarDays->last()->copy()->endOfDay()])->get();
         $shownCustomer = $this->section === 'customer' ? $this->customers()->with(['projects', 'tickets'])->find($this->showId) : null;
         $shownProject = $this->section === 'project' ? $this->projects()->with(['customer', 'tasks.assignedUser', 'tickets'])->find($this->showId) : null;
         $shownTicket = $this->section === 'ticket' ? $this->tickets()->with(['customer', 'project', 'assignedUser', 'timeEntries'])->find($this->showId) : null;
@@ -403,6 +451,6 @@ class Workspace extends Component
         $bookedDays = $entries->groupBy(fn (TimeEntry $entry) => $entry->started_at->toDateString())->take(7);
         $selectedTimeEntries = ($this->ticketId && $this->entryDate) ? TimeEntry::where('user_id', auth()->id())->where('ticket_id', $this->ticketId)->whereDate('started_at', $this->entryDate)->whereNotNull('booked_at')->orderBy('started_at')->get() : collect();
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'availableTimeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays', 'selectedTimeEntries') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'availableTimeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'calendarEvents', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays', 'selectedTimeEntries') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
     }
 }

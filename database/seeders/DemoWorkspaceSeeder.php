@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\CalendarEvent;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Task;
@@ -19,6 +21,18 @@ class DemoWorkspaceSeeder extends Seeder
             ['email' => 'test@example.com'],
             ['name' => 'Test User', 'password' => bcrypt('password'), 'email_verified_at' => now()],
         );
+        $company = Company::firstOrCreate(['name' => 'Falqo Demo Company']);
+        $user->update(['company_id' => $company->id]);
+        $colleagues = collect([
+            ['Mila de Vries', 'mila@example.com'],
+            ['Noah Jansen', 'noah@example.com'],
+        ])->map(fn (array $person) => User::updateOrCreate(['email' => $person[1]], ['company_id' => $company->id, 'name' => $person[0], 'password' => bcrypt('password'), 'email_verified_at' => now()]));
+
+        $planning = CalendarEvent::updateOrCreate(
+            ['company_id' => $company->id, 'title' => 'Weekly planning'],
+            ['created_by' => $user->id, 'description' => 'Review priorities and coordinate the week.', 'starts_at' => now()->startOfWeek()->addDays(1)->setTime(10, 0), 'ends_at' => now()->startOfWeek()->addDays(1)->setTime(10, 45), 'is_public' => true],
+        );
+        $planning->attendees()->sync($colleagues->prepend($user)->pluck('id'));
 
         $customers = collect([
             ['Northstar Studio', 'hello@northstar.test'],
