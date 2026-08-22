@@ -34,6 +34,9 @@ class Workspace extends Component
     public bool $groupTickets = false;
 
     #[Url]
+    public string $timeGroup = 'none';
+
+    #[Url]
     public bool $showCompletedTasks = false;
 
     public string $name = '';
