@@ -120,6 +120,11 @@
     button[aria-label="Bookmark for time"]:hover { background-image: none !important; background-color: transparent !important; }
     button[aria-label="Bookmark for time"] svg { transition: stroke-width 150ms ease; }
     button[aria-label="Bookmark for time"]:hover svg { stroke-width: 3; }
+    html:not(.dark) button[aria-label="Remove bookmark"] svg {
+        color: white !important;
+        fill: white !important;
+        stroke: white !important;
+    }
     button.time-entry-cell:hover { background-image: none !important; background-blend-mode: normal !important; }
     [data-flux-radio] { @apply cursor-pointer; }
     ::selection { @apply bg-falqo-200 text-falqo-950 dark:bg-falqo-700 dark:text-white; }
