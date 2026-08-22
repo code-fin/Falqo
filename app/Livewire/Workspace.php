@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\TaskStatus;
+use App\Enums\TicketCategory;
 use App\Models\CalendarEvent;
 use App\Models\Customer;
 use App\Models\Project;
@@ -44,6 +45,8 @@ class Workspace extends Component
     public string $description = '';
 
     public string $priority = 'normal';
+
+    public string $category = 'development';
 
     public int $estimatedHours = 0;
 
@@ -272,13 +275,13 @@ class Workspace extends Component
 
     public function addTicket(): void
     {
-        $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'customerId' => 'required|integer', 'projectId' => 'nullable|integer', 'assignedUserId' => 'required|integer', 'priority' => 'required|in:low,normal,high,urgent', 'estimatedHours' => 'required|integer|min:0|max:9999', 'estimatedMinutes' => 'required|integer|min:0|max:59']);
+        $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'customerId' => 'required|integer', 'projectId' => 'nullable|integer', 'assignedUserId' => 'required|integer', 'priority' => 'required|in:low,normal,high,urgent', 'category' => 'required|in:'.implode(',', array_column(TicketCategory::cases(), 'value')), 'estimatedHours' => 'required|integer|min:0|max:9999', 'estimatedMinutes' => 'required|integer|min:0|max:59']);
         abort_unless($this->customers()->whereKey($this->customerId)->exists() && $this->users()->whereKey($this->assignedUserId)->exists(), 403);
         if ($this->projectId) {
             abort_unless($this->projects()->whereKey($this->projectId)->exists(), 403);
         }
-        Ticket::create(['title' => $this->title, 'description' => $this->description ?: null, 'customer_id' => $this->customerId, 'project_id' => $this->projectId, 'assigned_user_id' => $this->assignedUserId, 'priority' => $this->priority, 'estimated_minutes' => ($this->estimatedHours * 60) + $this->estimatedMinutes, 'time_bookmarked' => $this->timeBookmarked]);
-        $this->reset('title', 'description', 'customerId', 'projectId', 'estimatedHours', 'estimatedMinutes');
+        Ticket::create(['title' => $this->title, 'description' => $this->description ?: null, 'category' => $this->category, 'customer_id' => $this->customerId, 'project_id' => $this->projectId, 'assigned_user_id' => $this->assignedUserId, 'priority' => $this->priority, 'estimated_minutes' => ($this->estimatedHours * 60) + $this->estimatedMinutes, 'time_bookmarked' => $this->timeBookmarked]);
+        $this->reset('title', 'description', 'category', 'customerId', 'projectId', 'estimatedHours', 'estimatedMinutes');
         Flux::modal('create-ticket')->close();
         Flux::toast('Ticket created', variant: 'success');
     }
