@@ -46,6 +46,8 @@ class Workspace extends Component
 
     public string $priority = 'normal';
 
+    public string $projectIcon = 'folder';
+
     public string $status = 'todo';
 
     public ?int $customerId = null;
@@ -138,12 +140,29 @@ class Workspace extends Component
 
     public function addProject(): void
     {
-        $this->validate(['name' => 'required|max:160', 'customerId' => 'required|integer', 'description' => 'nullable|max:2000']);
+        $this->validate(['name' => 'required|max:160', 'customerId' => 'required|integer', 'description' => 'nullable|max:2000', 'projectIcon' => 'required|in:folder,globe-alt,shopping-bag,rocket-launch,paint-brush,code-bracket,megaphone,chart-bar,building-office,briefcase,light-bulb,wrench-screwdriver']);
         abort_unless($this->customers()->whereKey($this->customerId)->exists(), 403);
-        Project::create(['name' => $this->name, 'customer_id' => $this->customerId, 'description' => $this->description]);
+        Project::create(['name' => $this->name, 'icon' => $this->projectIcon, 'customer_id' => $this->customerId, 'description' => $this->description]);
         $this->reset('name', 'customerId', 'description');
+        $this->projectIcon = 'folder';
         Flux::modal('create-project')->close();
         Flux::toast('Project created', variant: 'success');
+    }
+
+    public function openProjectIcon(int $projectId): void
+    {
+        $project = $this->projects()->findOrFail($projectId);
+        $this->projectId = $project->id;
+        $this->projectIcon = $project->icon;
+        Flux::modal('project-icon')->show();
+    }
+
+    public function saveProjectIcon(): void
+    {
+        $this->validate(['projectIcon' => 'required|in:folder,globe-alt,shopping-bag,rocket-launch,paint-brush,code-bracket,megaphone,chart-bar,building-office,briefcase,light-bulb,wrench-screwdriver']);
+        $this->projects()->findOrFail($this->projectId)->update(['icon' => $this->projectIcon]);
+        Flux::modal('project-icon')->close();
+        Flux::toast('Project icon updated', variant: 'success');
     }
 
     public function prepareTask(?int $projectId = null, ?string $date = null): void

@@ -37,9 +37,10 @@ class DemoWorkspaceSeeder extends Seeder
             [3, 'Patient onboarding', 'Streamline the new-patient intake experience.'],
             [0, 'Q3 campaign', 'Landing pages and launch assets for the autumn campaign.'],
         ];
-        $projects = collect($projectData)->map(fn (array $data) => Project::firstOrCreate(
+        $projectIcons = ['paint-brush', 'shopping-bag', 'code-bracket', 'building-office', 'megaphone'];
+        $projects = collect($projectData)->map(fn (array $data, int $index) => Project::updateOrCreate(
             ['customer_id' => $customers[$data[0]]->id, 'name' => $data[1]],
-            ['description' => $data[2], 'status' => 'active', 'due_date' => now()->addDays(random_int(20, 90))],
+            ['icon' => $projectIcons[$index], 'description' => $data[2], 'status' => 'active', 'due_date' => now()->addDays(random_int(20, 90))],
         ));
 
         $taskTitles = [
