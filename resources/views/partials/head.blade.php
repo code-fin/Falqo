@@ -7,7 +7,7 @@
     {{ filled($title ?? null) ? $title.' - '.config('app.name', 'Laravel') : config('app.name', 'Laravel') }}
 </title>
 
-<link rel="icon" href="/favicon-falcon-cobalt.png?v=1" type="image/png">
+<link rel="icon" href="/favicon-falcon-transparent.png?v=1" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 @fonts
