@@ -1,10 +1,22 @@
 @php
     $titles = ['overview'=>['Good to see you','Here’s what is happening across your workspace.'],'customers'=>['Customers','Keep client details and activity in one place.'],'projects'=>['Projects','Track every engagement from kickoff to delivery.'],'tickets'=>['Tickets','Triage, assign, and prioritize customer work.'],'tasks'=>['My tasks','Your assigned work, in the view that suits you.'],'time'=>['Time tracker','Book time only against your bookmarked assigned tickets.'],'customer'=>[$shownCustomer?->name ?? 'Customer','Customer details and connected work.'],'project'=>[$shownProject?->name ?? 'Project','Project details and task kanban.'],'ticket'=>[$shownTicket?->title ?? 'Ticket','Ticket details, ownership, and time.']];
     [$pageTitle,$pageDescription] = $titles[$section] ?? $titles['overview'];
+    $detailParents = ['customer'=>['customers','Customers'],'project'=>['projects','Projects'],'ticket'=>['tickets','Tickets']];
 @endphp
 
 <div class="min-h-screen" wire:poll.15s wire:cloak x-cloak>
     <main class="mx-auto max-w-7xl space-y-7 px-5 py-7 sm:px-8 sm:py-9">
+        <flux:breadcrumbs>
+            @if($section==='overview')
+                <flux:breadcrumbs.item icon="home">Overview</flux:breadcrumbs.item>
+            @else
+                <flux:breadcrumbs.item :href="route('dashboard')" icon="home" wire:navigate>Overview</flux:breadcrumbs.item>
+                @if(isset($detailParents[$section]))
+                    <flux:breadcrumbs.item :href="route('dashboard',['section'=>$detailParents[$section][0]])" wire:navigate>{{ $detailParents[$section][1] }}</flux:breadcrumbs.item>
+                @endif
+                <flux:breadcrumbs.item>{{ $pageTitle }}</flux:breadcrumbs.item>
+            @endif
+        </flux:breadcrumbs>
         <header class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">{{ $pageTitle }}@if($section==='overview') <span class="text-zinc-400">· {{ now()->format('l, F j') }}</span>@endif</h2><p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $pageDescription }}</p></div><div class="flex gap-2">@if(in_array($section,['customers','projects','tickets']))<flux:modal.trigger name="create-{{ rtrim($section,'s') }}"><flux:button variant="primary" icon="plus">New {{ rtrim($section,'s') }}</flux:button></flux:modal.trigger>@elseif($section==='tasks')<flux:button wire:click="prepareTask" variant="primary" icon="plus">New task</flux:button>@endif</div></header>
         @if($errors->any())<flux:callout variant="danger" icon="exclamation-triangle" heading="Something needs your attention">{{ $errors->first() }}</flux:callout>@endif
 
