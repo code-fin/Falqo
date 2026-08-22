@@ -35,6 +35,32 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_workspace_sections_have_dedicated_pages(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        foreach (['projects.index', 'tickets.index', 'tasks.index', 'calendar.index', 'time.index', 'customers.index'] as $routeName) {
+            $this->get(route($routeName))->assertOk();
+        }
+
+        $this->assertSame('/projects', route('projects.index', absolute: false));
+        $this->assertSame('/time-tracker', route('time.index', absolute: false));
+    }
+
+    public function test_customer_project_and_ticket_details_have_dedicated_pages(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+        $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
+        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'assigned_user_id' => $user->id, 'title' => 'Navigation']);
+        $this->actingAs($user);
+
+        $this->get(route('customers.show', $customer))->assertOk()->assertSee('Acme');
+        $this->get(route('projects.show', $project))->assertOk()->assertSee('Website');
+        $this->get(route('tickets.show', $ticket))->assertOk()->assertSee('Navigation');
+    }
+
     public function test_authenticated_users_can_create_a_customer(): void
     {
         $user = User::factory()->create();

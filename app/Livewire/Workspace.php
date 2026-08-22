@@ -19,10 +19,8 @@ use Livewire\Component;
 
 class Workspace extends Component
 {
-    #[Url]
     public string $section = 'overview';
 
-    #[Url]
     public ?int $showId = null;
 
     #[Url]
@@ -143,14 +141,16 @@ class Workspace extends Component
             'customer' => $this->customers(), 'project' => $this->projects(), 'ticket' => $this->tickets()
         };
         abort_unless($query->whereKey($id)->exists(), 403);
-        $this->section = $type;
-        $this->showId = $id;
+        $this->redirectRoute(match ($type) {
+            'customer' => 'customers.show', 'project' => 'projects.show', 'ticket' => 'tickets.show'
+        }, ['showId' => $id], navigate: true);
     }
 
     public function backTo(string $section): void
     {
-        $this->section = $section;
-        $this->showId = null;
+        $this->redirectRoute(match ($section) {
+            'customers' => 'customers.index', 'projects' => 'projects.index', 'tickets' => 'tickets.index', default => 'dashboard'
+        }, navigate: true);
     }
 
     public function addCustomer(): void

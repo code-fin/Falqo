@@ -12,14 +12,13 @@
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
-                    @php($activeSection = request()->query('section', 'overview'))
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="$activeSection === 'overview'" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="folder" :href="route('dashboard', ['section' => 'projects'])" :current="$activeSection === 'projects'" wire:navigate>{{ __('Projects') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="ticket" :href="route('dashboard', ['section' => 'tickets'])" :current="$activeSection === 'tickets'" wire:navigate>{{ __('Tickets') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="check-circle" :href="route('dashboard', ['section' => 'tasks'])" :current="$activeSection === 'tasks'" wire:navigate>{{ __('Tasks') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="calendar-days" :href="route('dashboard', ['section' => 'calendar'])" :current="$activeSection === 'calendar'" wire:navigate>{{ __('Calendar') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="clock" :href="route('dashboard', ['section' => 'time'])" :current="$activeSection === 'time'" wire:navigate>{{ __('Time tracker') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="users" :href="route('dashboard', ['section' => 'customers'])" :current="$activeSection === 'customers'" wire:navigate>{{ __('Customers') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="folder" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>{{ __('Projects') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="ticket" :href="route('tickets.index')" :current="request()->routeIs('tickets.*')" wire:navigate>{{ __('Tickets') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="check-circle" :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" wire:navigate>{{ __('Tasks') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="calendar-days" :href="route('calendar.index')" :current="request()->routeIs('calendar.*')" wire:navigate>{{ __('Calendar') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="clock" :href="route('time.index')" :current="request()->routeIs('time.*')" wire:navigate>{{ __('Time tracker') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>{{ __('Customers') }}</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
