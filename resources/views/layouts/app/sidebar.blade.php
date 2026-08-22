@@ -12,13 +12,13 @@
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
-                    <flux:sidebar.item :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate><x-slot:icon><flux:icon name="home" /></x-slot:icon>{{ __('Dashboard') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate><x-slot:icon><flux:icon name="folder" /></x-slot:icon>{{ __('Projects') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('tickets.index')" :current="request()->routeIs('tickets.*')" wire:navigate><x-slot:icon><flux:icon name="ticket" /></x-slot:icon>{{ __('Tickets') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" wire:navigate><x-slot:icon><flux:icon name="check-circle" /></x-slot:icon>{{ __('Tasks') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('calendar.index')" :current="request()->routeIs('calendar.*')" wire:navigate><x-slot:icon><flux:icon name="calendar-days" /></x-slot:icon>{{ __('Calendar') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('time.index')" :current="request()->routeIs('time.*')" wire:navigate><x-slot:icon><flux:icon name="clock" /></x-slot:icon>{{ __('Time tracker') }}</flux:sidebar.item>
-                    <flux:sidebar.item :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate><x-slot:icon><flux:icon name="users" /></x-slot:icon>{{ __('Customers') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate><x-slot:icon><flux:icon name="home" class="size-4!" /></x-slot:icon>{{ __('Dashboard') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate><x-slot:icon><flux:icon name="folder" class="size-4!" /></x-slot:icon>{{ __('Projects') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('tickets.index')" :current="request()->routeIs('tickets.*')" wire:navigate><x-slot:icon><flux:icon name="ticket" class="size-4!" /></x-slot:icon>{{ __('Tickets') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" wire:navigate><x-slot:icon><flux:icon name="check-circle" class="size-4!" /></x-slot:icon>{{ __('Tasks') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('calendar.index')" :current="request()->routeIs('calendar.*')" wire:navigate><x-slot:icon><flux:icon name="calendar-days" class="size-4!" /></x-slot:icon>{{ __('Calendar') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('time.index')" :current="request()->routeIs('time.*')" wire:navigate><x-slot:icon><flux:icon name="clock" class="size-4!" /></x-slot:icon>{{ __('Time tracker') }}</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate><x-slot:icon><flux:icon name="users" class="size-4!" /></x-slot:icon>{{ __('Customers') }}</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
@@ -28,9 +28,9 @@
 
             <div class="mb-3 w-full px-2">
                 <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm" class="w-full cursor-pointer" aria-label="{{ __('Appearance') }}">
-                    <flux:radio value="light" icon="sun" class="flex-1 cursor-pointer" aria-label="{{ __('Light') }}" />
-                    <flux:radio value="dark" icon="moon" class="flex-1 cursor-pointer" aria-label="{{ __('Dark') }}" />
-                    <flux:radio value="system" icon="computer-desktop" class="flex-1 cursor-pointer" aria-label="{{ __('Auto') }}" />
+                    <flux:radio value="light" icon="sun" icon:class="size-4!" class="flex-1 cursor-pointer" aria-label="{{ __('Light') }}" />
+                    <flux:radio value="dark" icon="moon" icon:class="size-4!" class="flex-1 cursor-pointer" aria-label="{{ __('Dark') }}" />
+                    <flux:radio value="system" icon="computer-desktop" icon:class="size-4!" class="flex-1 cursor-pointer" aria-label="{{ __('Auto') }}" />
                 </flux:radio.group>
             </div>
 
