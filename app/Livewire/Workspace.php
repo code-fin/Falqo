@@ -9,6 +9,7 @@ use App\Models\Ticket;
 use App\Models\TimeEntry;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -32,6 +33,24 @@ class Workspace extends Component
     public ?int $projectId = null;
 
     public ?int $taskId = null;
+
+    public ?int $ticketId = null;
+
+    public string $calendarMonth = '';
+
+    public string $weekStart = '';
+
+    public string $entryDate = '';
+
+    public int $entryHours = 0;
+
+    public int $entryMinutes = 0;
+
+    public function mount(): void
+    {
+        $this->calendarMonth = now()->startOfMonth()->toDateString();
+        $this->weekStart = now()->startOfWeek()->toDateString();
+    }
 
     private function customers(): Builder
     {
@@ -64,10 +83,10 @@ class Workspace extends Component
 
     public function addTask(): void
     {
-        $this->validate(['title' => 'required|max:200', 'projectId' => 'required|integer']);
+        $this->validate(['title' => 'required|max:200', 'projectId' => 'required|integer', 'entryDate' => 'nullable|date']);
         abort_unless($this->projects()->whereKey($this->projectId)->exists(), 403);
-        Task::create(['title' => $this->title, 'project_id' => $this->projectId]);
-        $this->reset('title', 'projectId');
+        Task::create(['title' => $this->title, 'project_id' => $this->projectId, 'due_date' => $this->entryDate ?: null]);
+        $this->reset('title', 'projectId', 'entryDate');
         Flux::modal('create-task')->close();
         Flux::toast('Task created', variant: 'success');
     }
@@ -108,14 +127,78 @@ class Workspace extends Component
         $task->update(['status' => $task->status === 'done' ? 'todo' : 'done']);
     }
 
+    public function changeCalendarMonth(int $months): void
+    {
+        $this->calendarMonth = Carbon::parse($this->calendarMonth)->addMonths($months)->startOfMonth()->toDateString();
+    }
+
+    public function changeWeek(int $weeks): void
+    {
+        $this->weekStart = Carbon::parse($this->weekStart)->addWeeks($weeks)->startOfWeek()->toDateString();
+    }
+
+    public function openTimeEntry(int $ticketId, string $date): void
+    {
+        abort_unless($this->tickets()->whereKey($ticketId)->exists(), 403);
+        $this->ticketId = $ticketId;
+        $this->entryDate = $date;
+        $this->entryHours = 0;
+        $this->entryMinutes = 0;
+        Flux::modal('log-ticket-time')->show();
+    }
+
+    private function tickets(): Builder
+    {
+        return Ticket::query()->whereHas('customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+    }
+
+    public function saveTicketTime(): void
+    {
+        $this->validate([
+            'ticketId' => 'required|integer',
+            'entryDate' => 'required|date',
+            'entryHours' => 'required|integer|min:0|max:23',
+            'entryMinutes' => 'required|integer|min:0|max:59',
+        ]);
+        $ticket = $this->tickets()->findOrFail($this->ticketId);
+        $duration = ($this->entryHours * 60) + $this->entryMinutes;
+        if ($duration < 1) {
+            $this->addError('entryMinutes', 'Enter a duration greater than zero.');
+
+            return;
+        }
+        $this->resetErrorBag('entryMinutes');
+        $startedAt = Carbon::parse($this->entryDate)->setTime(9, 0);
+        TimeEntry::create([
+            'user_id' => auth()->id(),
+            'project_id' => $ticket->project_id,
+            'ticket_id' => $ticket->id,
+            'description' => $ticket->title,
+            'started_at' => $startedAt,
+            'ended_at' => $startedAt->copy()->addMinutes($duration),
+        ]);
+        Flux::modal('log-ticket-time')->close();
+        Flux::toast('Time added', variant: 'success');
+    }
+
     public function render()
     {
         $customers = $this->customers()->withCount('projects')->latest()->get();
         $projects = $this->projects()->with('customer')->withCount(['tasks', 'tickets'])->latest()->get();
         $tasks = Task::with('project')->whereIn('project_id', $projects->pluck('id'))->latest()->get();
-        $tickets = Ticket::with(['customer', 'project'])->whereIn('customer_id', $customers->pluck('id'))->latest()->get();
-        $entries = TimeEntry::with(['project', 'task'])->where('user_id', auth()->id())->latest('started_at')->take(20)->get();
+        $tickets = $this->tickets()->with(['customer', 'project'])->latest()->get();
+        $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->latest('started_at')->take(50)->get();
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'tickets', 'entries') + ['activeTimer' => $entries->firstWhere('ended_at', null), 'minutesToday' => $entries->where('started_at', '>=', today())->sum->minutes]);
+        $month = Carbon::parse($this->calendarMonth)->startOfMonth();
+        $calendarStart = $month->copy()->startOfWeek();
+        $calendarDays = collect(range(0, 41))->map(fn (int $day) => $calendarStart->copy()->addDays($day));
+        $weekStart = Carbon::parse($this->weekStart)->startOfWeek();
+        $weekDays = collect(range(0, 6))->map(fn (int $day) => $weekStart->copy()->addDays($day));
+        $weekEnd = $weekStart->copy()->endOfWeek();
+        $weekEntries = TimeEntry::where('user_id', auth()->id())
+            ->whereBetween('started_at', [$weekStart->copy()->startOfDay(), $weekEnd->copy()->endOfDay()])
+            ->get();
+
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'tickets', 'entries', 'month', 'calendarDays', 'weekDays', 'weekEntries') + ['activeTimer' => $entries->firstWhere('ended_at', null), 'minutesToday' => $entries->where('started_at', '>=', today())->sum->minutes]);
     }
 }

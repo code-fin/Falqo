@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Livewire\Workspace;
+use App\Models\Customer;
+use App\Models\Project;
+use App\Models\Ticket;
 use App\Models\User;
+use Database\Seeders\DemoWorkspaceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -43,5 +47,35 @@ class DashboardTest extends TestCase
             'name' => 'Acme Studio',
             'email' => 'hello@acme.test',
         ]);
+    }
+
+    public function test_user_can_log_time_against_their_ticket(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+        $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
+        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'title' => 'Fix navigation']);
+
+        Livewire::actingAs($user)
+            ->test(Workspace::class)
+            ->set('ticketId', $ticket->id)
+            ->set('entryDate', today()->toDateString())
+            ->set('entryHours', 1)
+            ->set('entryMinutes', 30)
+            ->call('saveTicketTime')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('time_entries', ['user_id' => $user->id, 'ticket_id' => $ticket->id]);
+    }
+
+    public function test_demo_seeder_populates_calendar_and_timesheet_data(): void
+    {
+        $this->seed(DemoWorkspaceSeeder::class);
+
+        $this->assertDatabaseCount('customers', 4);
+        $this->assertDatabaseCount('projects', 5);
+        $this->assertDatabaseCount('tickets', 10);
+        $this->assertDatabaseHas('tasks', ['title' => 'Prepare homepage wireframes']);
+        $this->assertDatabaseHas('time_entries', ['user_id' => User::where('email', 'test@example.com')->value('id')]);
     }
 }
