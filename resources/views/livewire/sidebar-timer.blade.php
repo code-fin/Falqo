@@ -7,7 +7,7 @@
             @if($activeTimer)
                 <button wire:click="pause" class="mt-3 w-full rounded-lg bg-zinc-200 px-3 py-2 text-xs font-semibold dark:bg-white/10">Pause timer</button>
             @else
-                <flux:modal.trigger name="sidebar-book-timer"><button class="mt-3 w-full rounded-lg bg-falqo-600 px-3 py-2 text-xs font-semibold text-white">Book the time</button></flux:modal.trigger>
+                <div class="mt-3 grid grid-cols-2 gap-2"><button wire:click="resume" class="rounded-lg bg-zinc-200 px-2 py-2 text-xs font-semibold dark:bg-white/10">Resume</button><flux:modal.trigger name="sidebar-book-timer"><button class="w-full rounded-lg bg-falqo-600 px-2 py-2 text-xs font-semibold text-white">Book time</button></flux:modal.trigger></div>
             @endif
         </div>
     @endif
