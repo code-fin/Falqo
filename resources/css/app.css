@@ -65,7 +65,9 @@
     body { @apply transition-colors duration-200; }
     :where(a[href], button, [role="button"], summary, label[for], select, input[type="checkbox"], input[type="radio"]):not(:disabled) { @apply cursor-pointer; }
     :where(button, select, input):disabled { @apply cursor-not-allowed; }
-    button:not(:disabled) { @apply transition duration-150 hover:brightness-95 dark:hover:brightness-110; }
+    button:not(:disabled) { @apply transition duration-150; }
+    button:not(:disabled):hover { background-image: linear-gradient(rgb(0 0 0 / 0.07), rgb(0 0 0 / 0.07)); background-blend-mode: multiply; }
+    .dark button:not(:disabled):hover { background-image: linear-gradient(rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.10)); background-blend-mode: screen; }
     [data-flux-radio] { @apply cursor-pointer; }
     ::selection { @apply bg-falqo-200 text-falqo-950 dark:bg-falqo-700 dark:text-white; }
 }
