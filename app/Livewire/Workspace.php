@@ -309,10 +309,12 @@ class Workspace extends Component
 
     public function openBookTimer(): void
     {
+        TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first()?->update(['ended_at' => now()]);
         $entry = TimeEntry::where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->firstOrFail();
         $this->entryHours = intdiv($entry->minutes, 60);
         $this->entryMinutes = $entry->minutes % 60;
         $this->description = '';
+        $this->dispatch('timer-updated');
         Flux::modal('book-timer')->show();
     }
 

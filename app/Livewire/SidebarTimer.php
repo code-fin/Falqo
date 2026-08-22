@@ -30,6 +30,7 @@ class SidebarTimer extends Component
     public function book(): void
     {
         $this->validate(['description' => 'required|string|min:3|max:1000']);
+        TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first()?->update(['ended_at' => now()]);
         TimeEntry::where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->firstOrFail()->update(['description' => $this->description, 'booked_at' => now()]);
         $this->reset('description');
         $this->dispatch('timer-updated');

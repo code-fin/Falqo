@@ -27,10 +27,10 @@
             <livewire:sidebar-timer />
 
             <div class="mb-3 w-full px-2">
-                <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm" class="w-full" aria-label="{{ __('Appearance') }}">
-                    <flux:radio value="light" icon="sun" class="flex-1" aria-label="{{ __('Light') }}" />
-                    <flux:radio value="dark" icon="moon" class="flex-1" aria-label="{{ __('Dark') }}" />
-                    <flux:radio value="system" icon="computer-desktop" class="flex-1" aria-label="{{ __('Auto') }}" />
+                <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm" class="w-full cursor-pointer" aria-label="{{ __('Appearance') }}">
+                    <flux:radio value="light" icon="sun" class="flex-1 cursor-pointer" aria-label="{{ __('Light') }}" />
+                    <flux:radio value="dark" icon="moon" class="flex-1 cursor-pointer" aria-label="{{ __('Dark') }}" />
+                    <flux:radio value="system" icon="computer-desktop" class="flex-1 cursor-pointer" aria-label="{{ __('Auto') }}" />
                 </flux:radio.group>
             </div>
 
