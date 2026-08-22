@@ -132,6 +132,7 @@
         stroke: white !important;
     }
     button.time-entry-cell:hover { background-image: none !important; background-blend-mode: normal !important; }
+    button.task-toggle:hover { background-image: none !important; background-color: transparent !important; }
     [data-flux-radio] { @apply cursor-pointer; }
     ::selection { @apply bg-falqo-200 text-falqo-950 dark:bg-falqo-700 dark:text-white; }
 }
