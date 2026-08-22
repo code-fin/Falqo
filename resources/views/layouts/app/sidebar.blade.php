@@ -13,12 +13,12 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
                     @php($activeSection = request()->query('section', 'overview'))
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="$activeSection === 'overview'" wire:navigate>{{ __('Overview') }}</flux:sidebar.item>
-                    <flux:sidebar.item icon="users" :href="route('dashboard', ['section' => 'customers'])" :current="$activeSection === 'customers'" wire:navigate>{{ __('Customers') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="$activeSection === 'overview'" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
                     <flux:sidebar.item icon="folder" :href="route('dashboard', ['section' => 'projects'])" :current="$activeSection === 'projects'" wire:navigate>{{ __('Projects') }}</flux:sidebar.item>
                     <flux:sidebar.item icon="ticket" :href="route('dashboard', ['section' => 'tickets'])" :current="$activeSection === 'tickets'" wire:navigate>{{ __('Tickets') }}</flux:sidebar.item>
                     <flux:sidebar.item icon="check-circle" :href="route('dashboard', ['section' => 'tasks'])" :current="$activeSection === 'tasks'" wire:navigate>{{ __('Tasks') }}</flux:sidebar.item>
                     <flux:sidebar.item icon="clock" :href="route('dashboard', ['section' => 'time'])" :current="$activeSection === 'time'" wire:navigate>{{ __('Time tracker') }}</flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('dashboard', ['section' => 'customers'])" :current="$activeSection === 'customers'" wire:navigate>{{ __('Customers') }}</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
