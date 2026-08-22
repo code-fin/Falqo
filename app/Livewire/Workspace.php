@@ -32,6 +32,9 @@ class Workspace extends Component
     #[Url]
     public bool $groupTickets = false;
 
+    #[Url]
+    public bool $showCompletedTasks = false;
+
     public string $name = '';
 
     public string $email = '';
@@ -295,6 +298,7 @@ class Workspace extends Component
         $customers = $this->customers()->withCount(['projects', 'tickets'])->latest()->get();
         $projects = $this->projects()->with('customer')->withCount(['tasks', 'tickets'])->latest()->get();
         $tasks = $this->tasks()->with(['project.customer', 'assignedUser'])->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
+        $visibleTasks = $this->showCompletedTasks ? $tasks : $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done);
         $tickets = $this->tickets()->with(['customer', 'project', 'assignedUser'])->get()->sortByDesc(fn (Ticket $ticket) => $this->ticketOrder === 'priority' ? $ticket->priority->weight() : $ticket->created_at->timestamp)->values();
         $timeTickets = $this->timeTickets()->with(['customer', 'project'])->get();
         $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->whereNotNull('booked_at')->latest('started_at')->take(50)->get();
@@ -311,7 +315,9 @@ class Workspace extends Component
         $shownCustomer = $this->section === 'customer' ? $this->customers()->with(['projects', 'tickets'])->find($this->showId) : null;
         $shownProject = $this->section === 'project' ? $this->projects()->with(['customer', 'tasks.assignedUser', 'tickets'])->find($this->showId) : null;
         $shownTicket = $this->section === 'ticket' ? $this->tickets()->with(['customer', 'project', 'assignedUser', 'timeEntries'])->find($this->showId) : null;
+        $upcomingTasks = $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done)->filter(fn (Task $task) => $task->due_date?->between(today(), today()->addDays(14)))->take(6);
+        $bookedDays = $entries->groupBy(fn (TimeEntry $entry) => $entry->started_at->toDateString())->take(7);
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'tickets', 'timeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'visibleTasks', 'tickets', 'timeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket', 'upcomingTasks', 'bookedDays') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
     }
 }

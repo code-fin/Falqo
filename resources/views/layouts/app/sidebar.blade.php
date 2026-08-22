@@ -24,6 +24,8 @@
 
             <flux:spacer />
 
+            <livewire:sidebar-timer />
+
             <div class="mb-3 w-full px-2">
                 <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm" class="w-full" aria-label="{{ __('Appearance') }}">
                     <flux:radio value="light" icon="sun" class="flex-1" aria-label="{{ __('Light') }}" />
