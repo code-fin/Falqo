@@ -126,6 +126,7 @@ class DashboardTest extends TestCase
             ->set('projectId', $project->id)
             ->set('assignedUserId', $user->id)
             ->set('category', 'design')
+            ->set('ticketStatus', 'in_progress')
             ->set('estimatedHours', 2)
             ->set('estimatedMinutes', 30)
             ->call('addTicket')
@@ -134,6 +135,7 @@ class DashboardTest extends TestCase
         $this->assertDatabaseHas('tickets', [
             'title' => 'Build reporting view',
             'category' => 'design',
+            'status' => 'in_progress',
             'estimated_minutes' => 150,
         ]);
     }
