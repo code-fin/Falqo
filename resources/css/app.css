@@ -47,6 +47,58 @@ table button[aria-label="Remove bookmark"] {
     color: white;
 }
 
+/* Week navigation keeps the tracker mounted and masks only changing values. */
+.timesheet-week-loading section:has(.time-entry-cell) h3,
+.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child),
+.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child),
+.timesheet-week-loading .time-entry-cell {
+    position: relative;
+    color: transparent !important;
+}
+
+.timesheet-week-loading .time-entry-cell > * {
+    opacity: 0 !important;
+}
+
+.timesheet-week-loading section:has(.time-entry-cell) h3::after,
+.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+.timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
+.timesheet-week-loading .time-entry-cell::after {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 60%;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: rgb(161 161 170 / 35%);
+    content: '';
+    transform: translate(-50%, -50%);
+    animation: timesheet-skeleton 1.1s ease-in-out infinite;
+}
+
+.timesheet-week-loading section:has(.time-entry-cell) h3::after {
+    width: 9rem;
+}
+
+@keyframes timesheet-skeleton {
+    50% { opacity: 0.4; }
+}
+
+.dark .timesheet-week-loading section:has(.time-entry-cell) h3::after,
+.dark .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+.dark .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
+.dark .timesheet-week-loading .time-entry-cell::after {
+    background: rgb(255 255 255 / 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .timesheet-week-loading section:has(.time-entry-cell) h3::after,
+    .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child)::after,
+    .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:last-child > div:not(:first-child)::after,
+    .timesheet-week-loading .time-entry-cell::after {
+        animation: none;
+    }
+}
+
 @layer theme {
     .dark {
         --color-accent: var(--color-falqo-500);
