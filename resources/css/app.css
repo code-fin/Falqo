@@ -41,6 +41,12 @@
     --color-accent-foreground: var(--color-white);
 }
 
+/* Keep bookmarked tickets immediately recognizable in dense tables. */
+table button[aria-label="Remove bookmark"] {
+    background-color: var(--color-falqo-600);
+    color: white;
+}
+
 @layer theme {
     .dark {
         --color-accent: var(--color-falqo-500);

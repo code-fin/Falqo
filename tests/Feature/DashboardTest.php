@@ -70,6 +70,28 @@ class DashboardTest extends TestCase
         $this->assertDatabaseHas('time_entries', ['user_id' => $user->id, 'ticket_id' => $ticket->id]);
     }
 
+    public function test_user_can_create_a_ticket_with_an_estimate(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+        $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
+
+        Livewire::actingAs($user)->test(Workspace::class)
+            ->set('title', 'Build reporting view')
+            ->set('customerId', $customer->id)
+            ->set('projectId', $project->id)
+            ->set('assignedUserId', $user->id)
+            ->set('estimatedHours', 2)
+            ->set('estimatedMinutes', 30)
+            ->call('addTicket')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('tickets', [
+            'title' => 'Build reporting view',
+            'estimated_minutes' => 150,
+        ]);
+    }
+
     public function test_time_booking_requires_a_reason(): void
     {
         $user = User::factory()->create();

@@ -14,7 +14,7 @@ class Ticket extends Model
 
     protected function casts(): array
     {
-        return ['priority' => TicketPriority::class, 'status' => TicketStatus::class, 'time_bookmarked' => 'boolean'];
+        return ['priority' => TicketPriority::class, 'status' => TicketStatus::class, 'time_bookmarked' => 'boolean', 'estimated_minutes' => 'integer'];
     }
 
     public function customer(): BelongsTo

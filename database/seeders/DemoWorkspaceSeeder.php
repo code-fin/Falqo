@@ -74,7 +74,7 @@ class DemoWorkspaceSeeder extends Seeder
 
             return Ticket::updateOrCreate(
                 ['customer_id' => $project->customer_id, 'title' => $title],
-                ['project_id' => $project->id, 'assigned_user_id' => $user->id, 'priority' => ['low', 'normal', 'high', 'urgent'][$index % 4], 'status' => $index % 6 === 0 ? 'closed' : 'open', 'time_bookmarked' => $index < 7],
+                ['project_id' => $project->id, 'assigned_user_id' => $user->id, 'priority' => ['low', 'normal', 'high', 'urgent'][$index % 4], 'status' => $index % 6 === 0 ? 'closed' : 'open', 'estimated_minutes' => [60, 120, 180, 240, 360][$index % 5], 'time_bookmarked' => $index < 7],
             );
         });
 
