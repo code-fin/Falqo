@@ -54,7 +54,7 @@ class DashboardTest extends TestCase
         $user = User::factory()->create();
         $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
         $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
-        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'title' => 'Fix navigation']);
+        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'assigned_user_id' => $user->id, 'time_bookmarked' => true, 'title' => 'Fix navigation']);
 
         Livewire::actingAs($user)
             ->test(Workspace::class)
@@ -62,10 +62,24 @@ class DashboardTest extends TestCase
             ->set('entryDate', today()->toDateString())
             ->set('entryHours', 1)
             ->set('entryMinutes', 30)
+            ->set('description', 'Implemented and tested the navigation fix.')
             ->call('saveTicketTime')
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('time_entries', ['user_id' => $user->id, 'ticket_id' => $ticket->id]);
+    }
+
+    public function test_time_booking_requires_a_reason(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+        $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
+        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'assigned_user_id' => $user->id, 'time_bookmarked' => true, 'title' => 'Fix navigation']);
+
+        Livewire::actingAs($user)->test(Workspace::class)
+            ->set('ticketId', $ticket->id)->set('entryDate', today()->toDateString())
+            ->set('entryHours', 1)->set('description', '')
+            ->call('saveTicketTime')->assertHasErrors(['description' => 'required']);
     }
 
     public function test_demo_seeder_populates_calendar_and_timesheet_data(): void

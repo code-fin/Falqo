@@ -50,10 +50,11 @@ class DemoWorkspaceSeeder extends Seeder
             'Design account settings', 'Test invitation flow', 'Finalize content migration',
         ];
         foreach ($taskTitles as $index => $title) {
-            Task::firstOrCreate(
+            Task::updateOrCreate(
                 ['project_id' => $projects[$index % $projects->count()]->id, 'title' => $title],
                 [
                     'status' => $index % 5 === 0 ? 'done' : 'todo',
+                    'assigned_user_id' => $user->id,
                     'due_date' => $index === 14 ? null : now()->startOfMonth()->addDays(($index * 3) % 35),
                     'estimated_minutes' => [30, 60, 90, 120, 180][$index % 5],
                 ],
@@ -67,12 +68,12 @@ class DemoWorkspaceSeeder extends Seeder
             'Form validation message overlaps input', 'Export analytics for monthly report',
             'New campaign UTM parameters', 'Improve keyboard focus on modal',
         ];
-        $tickets = collect($ticketTitles)->map(function (string $title, int $index) use ($projects) {
+        $tickets = collect($ticketTitles)->map(function (string $title, int $index) use ($projects, $user) {
             $project = $projects[$index % $projects->count()];
 
-            return Ticket::firstOrCreate(
+            return Ticket::updateOrCreate(
                 ['customer_id' => $project->customer_id, 'title' => $title],
-                ['project_id' => $project->id, 'priority' => ['normal', 'high', 'normal', 'urgent'][$index % 4], 'status' => $index % 6 === 0 ? 'closed' : 'open'],
+                ['project_id' => $project->id, 'assigned_user_id' => $user->id, 'priority' => ['low', 'normal', 'high', 'urgent'][$index % 4], 'status' => $index % 6 === 0 ? 'closed' : 'open', 'time_bookmarked' => $index < 7],
             );
         });
 
@@ -85,9 +86,9 @@ class DemoWorkspaceSeeder extends Seeder
                 $ticket = $tickets[($daysAgo + $slot) % $tickets->count()];
                 $minutes = [30, 45, 60, 75, 90, 120][($daysAgo + $slot) % 6];
                 $startedAt = Carbon::today()->subDays($daysAgo)->setTime(9 + ($slot * 2), 0);
-                TimeEntry::firstOrCreate(
+                TimeEntry::updateOrCreate(
                     ['user_id' => $user->id, 'ticket_id' => $ticket->id, 'started_at' => $startedAt],
-                    ['project_id' => $ticket->project_id, 'task_id' => $tasks[($daysAgo + $slot) % $tasks->count()]->id, 'description' => $ticket->title, 'ended_at' => $startedAt->copy()->addMinutes($minutes)],
+                    ['project_id' => $ticket->project_id, 'task_id' => $tasks[($daysAgo + $slot) % $tasks->count()]->id, 'description' => 'Worked on '.$ticket->title, 'ended_at' => $startedAt->copy()->addMinutes($minutes), 'booked_at' => $startedAt->copy()->addMinutes($minutes)],
                 );
             }
         }

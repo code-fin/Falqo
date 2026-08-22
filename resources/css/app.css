@@ -51,6 +51,8 @@
 
 @layer base {
 
+    [x-cloak], [wire\:cloak] { display: none !important; }
+
     *,
     ::after,
     ::before,

@@ -22,23 +22,15 @@
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
-            <div class="mx-2 mb-3 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-2 dark:border-white/10 dark:bg-white/5">
-                <div class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{{ __('Appearance') }}</div>
-                <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm">
-                    <flux:radio value="light" icon="sun" :label="__('Light')" />
-                    <flux:radio value="dark" icon="moon" :label="__('Dark')" />
-                    <flux:radio value="system" icon="computer-desktop" :label="__('Auto')" />
-                </flux:radio.group>
-            </div>
-
             <flux:spacer />
 
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/code-fin/Falqo" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-            </flux:sidebar.nav>
+            <div class="mb-3 flex justify-center px-2">
+                <flux:radio.group x-data variant="segmented" x-model="$flux.appearance" size="sm" aria-label="{{ __('Appearance') }}">
+                    <flux:radio value="light" icon="sun" aria-label="{{ __('Light') }}" />
+                    <flux:radio value="dark" icon="moon" aria-label="{{ __('Dark') }}" />
+                    <flux:radio value="system" icon="computer-desktop" aria-label="{{ __('Auto') }}" />
+                </flux:radio.group>
+            </div>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

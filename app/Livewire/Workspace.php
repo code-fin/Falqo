@@ -2,11 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Enums\TaskStatus;
 use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Ticket;
 use App\Models\TimeEntry;
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -18,6 +20,18 @@ class Workspace extends Component
     #[Url]
     public string $section = 'overview';
 
+    #[Url]
+    public ?int $showId = null;
+
+    #[Url]
+    public string $taskView = 'month';
+
+    #[Url]
+    public string $ticketOrder = 'priority';
+
+    #[Url]
+    public bool $groupTickets = false;
+
     public string $name = '';
 
     public string $email = '';
@@ -28,6 +42,8 @@ class Workspace extends Component
 
     public string $priority = 'normal';
 
+    public string $status = 'todo';
+
     public ?int $customerId = null;
 
     public ?int $projectId = null;
@@ -36,9 +52,15 @@ class Workspace extends Component
 
     public ?int $ticketId = null;
 
-    public string $calendarMonth = '';
+    public ?int $assignedUserId = null;
+
+    public bool $timeBookmarked = true;
+
+    public string $calendarDate = '';
 
     public string $weekStart = '';
+
+    public string $selectedDay = '';
 
     public string $entryDate = '';
 
@@ -48,8 +70,10 @@ class Workspace extends Component
 
     public function mount(): void
     {
-        $this->calendarMonth = now()->startOfMonth()->toDateString();
+        $this->calendarDate = today()->toDateString();
         $this->weekStart = now()->startOfWeek()->toDateString();
+        $this->selectedDay = today()->toDateString();
+        $this->assignedUserId = auth()->id();
     }
 
     private function customers(): Builder
@@ -60,6 +84,43 @@ class Workspace extends Component
     private function projects(): Builder
     {
         return Project::query()->whereHas('customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+    }
+
+    private function tickets(): Builder
+    {
+        return Ticket::query()->whereHas('customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+    }
+
+    private function tasks(): Builder
+    {
+        return Task::query()->where('assigned_user_id', auth()->id())->whereHas('project.customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+    }
+
+    private function workspaceTasks(): Builder
+    {
+        return Task::query()->whereHas('project.customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+    }
+
+    private function users(): Builder
+    {
+        return User::query()->orderBy('name');
+    }
+
+    public function show(string $type, int $id): void
+    {
+        abort_unless(in_array($type, ['customer', 'project', 'ticket'], true), 404);
+        $query = match ($type) {
+            'customer' => $this->customers(), 'project' => $this->projects(), 'ticket' => $this->tickets()
+        };
+        abort_unless($query->whereKey($id)->exists(), 403);
+        $this->section = $type;
+        $this->showId = $id;
+    }
+
+    public function backTo(string $section): void
+    {
+        $this->section = $section;
+        $this->showId = null;
     }
 
     public function addCustomer(): void
@@ -81,55 +142,82 @@ class Workspace extends Component
         Flux::toast('Project created', variant: 'success');
     }
 
-    public function addTask(): void
+    public function prepareTask(?int $projectId = null, ?string $date = null): void
     {
-        $this->validate(['title' => 'required|max:200', 'projectId' => 'required|integer', 'entryDate' => 'nullable|date']);
-        abort_unless($this->projects()->whereKey($this->projectId)->exists(), 403);
-        Task::create(['title' => $this->title, 'project_id' => $this->projectId, 'due_date' => $this->entryDate ?: null]);
-        $this->reset('title', 'projectId', 'entryDate');
-        Flux::modal('create-task')->close();
-        Flux::toast('Task created', variant: 'success');
+        $this->reset('taskId', 'title', 'description');
+        $this->status = TaskStatus::Todo->value;
+        $this->projectId = $projectId;
+        $this->entryDate = $date ?? '';
+        $this->assignedUserId = auth()->id();
+        Flux::modal('task-editor')->show();
+    }
+
+    public function editTask(int $id): void
+    {
+        $task = $this->workspaceTasks()->findOrFail($id);
+        $this->taskId = $task->id;
+        $this->title = $task->title;
+        $this->description = $task->description ?? '';
+        $this->projectId = $task->project_id;
+        $this->entryDate = $task->due_date?->toDateString() ?? '';
+        $this->assignedUserId = $task->assigned_user_id;
+        $this->status = $task->status->value;
+        Flux::modal('task-editor')->show();
+    }
+
+    public function saveTask(): void
+    {
+        $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'projectId' => 'required|integer', 'entryDate' => 'nullable|date', 'assignedUserId' => 'required|integer', 'status' => 'required|in:todo,in_progress,done']);
+        abort_unless($this->projects()->whereKey($this->projectId)->exists() && $this->users()->whereKey($this->assignedUserId)->exists(), 403);
+        $values = ['title' => $this->title, 'description' => $this->description ?: null, 'project_id' => $this->projectId, 'due_date' => $this->entryDate ?: null, 'assigned_user_id' => $this->assignedUserId, 'status' => $this->status];
+        $this->taskId ? $this->workspaceTasks()->findOrFail($this->taskId)->update($values) : Task::create($values);
+        Flux::modal('task-editor')->close();
+        Flux::toast($this->taskId ? 'Task updated' : 'Task created', variant: 'success');
+        $this->reset('taskId', 'title', 'description', 'projectId', 'entryDate');
+    }
+
+    public function moveTask(int $taskId, string $status): void
+    {
+        abort_unless(in_array($status, array_column(TaskStatus::cases(), 'value'), true), 422);
+        $this->workspaceTasks()->findOrFail($taskId)->update(['status' => $status]);
+    }
+
+    public function toggleTask(int $taskId): void
+    {
+        $task = $this->tasks()->findOrFail($taskId);
+        $task->update(['status' => $task->status === TaskStatus::Done ? TaskStatus::Todo->value : TaskStatus::Done->value]);
     }
 
     public function addTicket(): void
     {
-        $this->validate(['title' => 'required|max:200', 'customerId' => 'required|integer', 'projectId' => 'nullable|integer', 'priority' => 'in:low,normal,high,urgent']);
-        abort_unless($this->customers()->whereKey($this->customerId)->exists(), 403);
+        $this->validate(['title' => 'required|max:200', 'description' => 'nullable|max:2000', 'customerId' => 'required|integer', 'projectId' => 'nullable|integer', 'assignedUserId' => 'required|integer', 'priority' => 'required|in:low,normal,high,urgent']);
+        abort_unless($this->customers()->whereKey($this->customerId)->exists() && $this->users()->whereKey($this->assignedUserId)->exists(), 403);
         if ($this->projectId) {
             abort_unless($this->projects()->whereKey($this->projectId)->exists(), 403);
         }
-        Ticket::create(['title' => $this->title, 'customer_id' => $this->customerId, 'project_id' => $this->projectId, 'priority' => $this->priority]);
-        $this->reset('title', 'customerId', 'projectId');
+        Ticket::create(['title' => $this->title, 'description' => $this->description ?: null, 'customer_id' => $this->customerId, 'project_id' => $this->projectId, 'assigned_user_id' => $this->assignedUserId, 'priority' => $this->priority, 'time_bookmarked' => $this->timeBookmarked]);
+        $this->reset('title', 'description', 'customerId', 'projectId');
         Flux::modal('create-ticket')->close();
         Flux::toast('Ticket created', variant: 'success');
     }
 
-    public function startTimer(): void
+    public function toggleTicketBookmark(int $ticketId): void
     {
-        $this->validate(['projectId' => 'required|integer', 'taskId' => 'nullable|integer', 'description' => 'nullable|max:500']);
-        abort_unless($this->projects()->whereKey($this->projectId)->exists(), 403);
-        abort_if(TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->exists(), 422);
-        TimeEntry::create(['user_id' => auth()->id(), 'project_id' => $this->projectId, 'task_id' => $this->taskId, 'description' => $this->description, 'started_at' => now()]);
-        $this->reset('projectId', 'taskId', 'description');
-        Flux::modal('start-timer')->close();
-        Flux::toast('Timer started', variant: 'success');
+        $ticket = $this->tickets()->findOrFail($ticketId);
+        $ticket->update(['time_bookmarked' => ! $ticket->time_bookmarked]);
     }
 
-    public function stopTimer(): void
+    public function selectCalendarDay(string $date): void
     {
-        TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first()?->update(['ended_at' => now()]);
-        Flux::toast('Time entry saved');
+        $this->selectedDay = $date;
     }
 
-    public function toggleTask(Task $task): void
+    public function changeTaskPeriod(int $amount): void
     {
-        abort_unless($this->projects()->whereKey($task->project_id)->exists(), 403);
-        $task->update(['status' => $task->status === 'done' ? 'todo' : 'done']);
-    }
-
-    public function changeCalendarMonth(int $months): void
-    {
-        $this->calendarMonth = Carbon::parse($this->calendarMonth)->addMonths($months)->startOfMonth()->toDateString();
+        $date = Carbon::parse($this->calendarDate);
+        $this->calendarDate = (match ($this->taskView) {
+            'day' => $date->addDays($amount), 'week' => $date->addWeeks($amount), default => $date->addMonths($amount)
+        })->toDateString();
     }
 
     public function changeWeek(int $weeks): void
@@ -139,66 +227,91 @@ class Workspace extends Component
 
     public function openTimeEntry(int $ticketId, string $date): void
     {
-        abort_unless($this->tickets()->whereKey($ticketId)->exists(), 403);
-        $this->ticketId = $ticketId;
+        $ticket = $this->timeTickets()->findOrFail($ticketId);
+        $this->ticketId = $ticket->id;
         $this->entryDate = $date;
-        $this->entryHours = 0;
-        $this->entryMinutes = 0;
+        $minutes = TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereDate('started_at', $date)->whereNotNull('booked_at')->get()->sum->minutes;
+        $this->entryHours = intdiv($minutes, 60);
+        $this->entryMinutes = $minutes % 60;
+        $this->description = '';
         Flux::modal('log-ticket-time')->show();
     }
 
-    private function tickets(): Builder
+    private function timeTickets(): Builder
     {
-        return Ticket::query()->whereHas('customer', fn (Builder $q) => $q->where('user_id', auth()->id()));
+        return $this->tickets()->where('assigned_user_id', auth()->id())->where('time_bookmarked', true);
     }
 
     public function saveTicketTime(): void
     {
-        $this->validate([
-            'ticketId' => 'required|integer',
-            'entryDate' => 'required|date',
-            'entryHours' => 'required|integer|min:0|max:23',
-            'entryMinutes' => 'required|integer|min:0|max:59',
-        ]);
-        $ticket = $this->tickets()->findOrFail($this->ticketId);
+        $this->validate(['ticketId' => 'required|integer', 'entryDate' => 'required|date', 'entryHours' => 'required|integer|min:0|max:23', 'entryMinutes' => 'required|integer|min:0|max:59', 'description' => 'required|string|min:3|max:1000']);
+        $ticket = $this->timeTickets()->findOrFail($this->ticketId);
         $duration = ($this->entryHours * 60) + $this->entryMinutes;
         if ($duration < 1) {
             $this->addError('entryMinutes', 'Enter a duration greater than zero.');
 
             return;
         }
-        $this->resetErrorBag('entryMinutes');
+        TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereDate('started_at', $this->entryDate)->whereNotNull('booked_at')->delete();
         $startedAt = Carbon::parse($this->entryDate)->setTime(9, 0);
-        TimeEntry::create([
-            'user_id' => auth()->id(),
-            'project_id' => $ticket->project_id,
-            'ticket_id' => $ticket->id,
-            'description' => $ticket->title,
-            'started_at' => $startedAt,
-            'ended_at' => $startedAt->copy()->addMinutes($duration),
-        ]);
+        TimeEntry::create(['user_id' => auth()->id(), 'project_id' => $ticket->project_id, 'ticket_id' => $ticket->id, 'description' => $this->description, 'started_at' => $startedAt, 'ended_at' => $startedAt->copy()->addMinutes($duration), 'booked_at' => now()]);
         Flux::modal('log-ticket-time')->close();
-        Flux::toast('Time added', variant: 'success');
+        Flux::toast('Time booked', variant: 'success');
+    }
+
+    public function startTicketTimer(int $ticketId): void
+    {
+        abort_if(TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->exists(), 422);
+        $ticket = $this->timeTickets()->findOrFail($ticketId);
+        TimeEntry::create(['user_id' => auth()->id(), 'project_id' => $ticket->project_id, 'ticket_id' => $ticket->id, 'started_at' => now()]);
+        Flux::toast('Timer started', variant: 'success');
+    }
+
+    public function pauseTimer(): void
+    {
+        TimeEntry::where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->firstOrFail()->update(['ended_at' => now()]);
+        Flux::toast('Timer paused. Book it when ready.');
+    }
+
+    public function openBookTimer(): void
+    {
+        $entry = TimeEntry::where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->firstOrFail();
+        $this->entryHours = intdiv($entry->minutes, 60);
+        $this->entryMinutes = $entry->minutes % 60;
+        $this->description = '';
+        Flux::modal('book-timer')->show();
+    }
+
+    public function bookTimer(): void
+    {
+        $this->validate(['description' => 'required|string|min:3|max:1000']);
+        TimeEntry::where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->firstOrFail()->update(['description' => $this->description, 'booked_at' => now()]);
+        Flux::modal('book-timer')->close();
+        Flux::toast('Time booked', variant: 'success');
     }
 
     public function render()
     {
-        $customers = $this->customers()->withCount('projects')->latest()->get();
+        $customers = $this->customers()->withCount(['projects', 'tickets'])->latest()->get();
         $projects = $this->projects()->with('customer')->withCount(['tasks', 'tickets'])->latest()->get();
-        $tasks = Task::with('project')->whereIn('project_id', $projects->pluck('id'))->latest()->get();
-        $tickets = $this->tickets()->with(['customer', 'project'])->latest()->get();
-        $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->latest('started_at')->take(50)->get();
-
-        $month = Carbon::parse($this->calendarMonth)->startOfMonth();
-        $calendarStart = $month->copy()->startOfWeek();
-        $calendarDays = collect(range(0, 41))->map(fn (int $day) => $calendarStart->copy()->addDays($day));
+        $tasks = $this->tasks()->with(['project.customer', 'assignedUser'])->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
+        $tickets = $this->tickets()->with(['customer', 'project', 'assignedUser'])->get()->sortByDesc(fn (Ticket $ticket) => $this->ticketOrder === 'priority' ? $ticket->priority->weight() : $ticket->created_at->timestamp)->values();
+        $timeTickets = $this->timeTickets()->with(['customer', 'project'])->get();
+        $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->whereNotNull('booked_at')->latest('started_at')->take(50)->get();
+        $activeTimer = TimeEntry::with('ticket')->where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first();
+        $pausedTimer = TimeEntry::with('ticket')->where('user_id', auth()->id())->whereNotNull('ended_at')->whereNull('booked_at')->latest('ended_at')->first();
+        $focus = Carbon::parse($this->calendarDate);
+        $month = $focus->copy()->startOfMonth();
+        $calendarDays = collect(range(0, 41))->map(fn (int $i) => $month->copy()->startOfWeek()->addDays($i));
+        $taskWeek = collect(range(0, 6))->map(fn (int $i) => $focus->copy()->startOfWeek()->addDays($i));
         $weekStart = Carbon::parse($this->weekStart)->startOfWeek();
-        $weekDays = collect(range(0, 6))->map(fn (int $day) => $weekStart->copy()->addDays($day));
-        $weekEnd = $weekStart->copy()->endOfWeek();
-        $weekEntries = TimeEntry::where('user_id', auth()->id())
-            ->whereBetween('started_at', [$weekStart->copy()->startOfDay(), $weekEnd->copy()->endOfDay()])
-            ->get();
+        $weekDays = collect(range(0, 6))->map(fn (int $i) => $weekStart->copy()->addDays($i));
+        $weekEntries = TimeEntry::where('user_id', auth()->id())->whereNotNull('booked_at')->whereBetween('started_at', [$weekStart->copy()->startOfDay(), $weekStart->copy()->endOfWeek()->endOfDay()])->get();
+        $users = $this->users()->get();
+        $shownCustomer = $this->section === 'customer' ? $this->customers()->with(['projects', 'tickets'])->find($this->showId) : null;
+        $shownProject = $this->section === 'project' ? $this->projects()->with(['customer', 'tasks.assignedUser', 'tickets'])->find($this->showId) : null;
+        $shownTicket = $this->section === 'ticket' ? $this->tickets()->with(['customer', 'project', 'assignedUser', 'timeEntries'])->find($this->showId) : null;
 
-        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'tickets', 'entries', 'month', 'calendarDays', 'weekDays', 'weekEntries') + ['activeTimer' => $entries->firstWhere('ended_at', null), 'minutesToday' => $entries->where('started_at', '>=', today())->sum->minutes]);
+        return view('livewire.workspace', compact('customers', 'projects', 'tasks', 'tickets', 'timeTickets', 'entries', 'activeTimer', 'pausedTimer', 'month', 'calendarDays', 'taskWeek', 'weekDays', 'weekEntries', 'users', 'shownCustomer', 'shownProject', 'shownTicket') + ['minutesToday' => $entries->filter(fn ($entry) => $entry->started_at->isToday())->sum->minutes]);
     }
 }
