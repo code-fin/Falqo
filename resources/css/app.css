@@ -42,11 +42,6 @@
 }
 
 /* Keep bookmarked tickets immediately recognizable in dense tables. */
-table button[aria-label="Remove bookmark"] {
-    background-color: var(--color-falqo-600);
-    color: white;
-}
-
 /* Week navigation keeps the tracker mounted and masks only changing values. */
 .timesheet-week-loading section:has(.time-entry-cell) h3,
 .timesheet-week-loading section:has(.time-entry-cell) .overflow-x-auto > div > .grid:first-child > div:not(:first-child),

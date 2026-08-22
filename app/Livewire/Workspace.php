@@ -302,7 +302,10 @@ class Workspace extends Component
     public function saveTicketTime(): void
     {
         $this->validate(['ticketId' => 'required|integer', 'entryDate' => 'required|date', 'entryHours' => 'required|integer|min:0|max:23', 'entryMinutes' => 'required|integer|min:0|max:59', 'description' => 'required|string|min:3|max:1000']);
-        $ticket = $this->timeTickets()->findOrFail($this->ticketId);
+        $ticket = $this->tickets()->where('assigned_user_id', auth()->id())->findOrFail($this->ticketId);
+        $entryWeek = Carbon::parse($this->entryDate)->startOfWeek();
+        $hasTimeInEntryWeek = TimeEntry::where('user_id', auth()->id())->where('ticket_id', $ticket->id)->whereNotNull('booked_at')->whereBetween('started_at', [$entryWeek, $entryWeek->copy()->endOfWeek()->endOfDay()])->exists();
+        abort_unless($ticket->time_bookmarked || $this->timeEntryId || $hasTimeInEntryWeek, 403);
         $duration = ($this->entryHours * 60) + $this->entryMinutes;
         if ($duration < 1) {
             $this->addError('entryMinutes', 'Enter a duration greater than zero.');
@@ -377,7 +380,11 @@ class Workspace extends Component
         $tasks = $this->tasks()->with(['project.customer', 'assignedUser'])->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
         $visibleTasks = $this->showCompletedTasks ? $tasks : $tasks->reject(fn (Task $task) => $task->status === TaskStatus::Done);
         $tickets = $this->tickets()->with(['customer', 'project', 'assignedUser', 'timeEntries' => fn ($query) => $query->whereNotNull('booked_at')])->get()->sortByDesc(fn (Ticket $ticket) => $this->ticketOrder === 'priority' ? $ticket->priority->weight() : $ticket->created_at->timestamp)->values();
-        $timeTickets = $this->timeTickets()->with(['customer', 'project'])->get();
+        $weekStart = Carbon::parse($this->weekStart)->startOfWeek();
+        $weekEnd = $weekStart->copy()->endOfWeek()->endOfDay();
+        $timeTickets = $this->tickets()->where('assigned_user_id', auth()->id())->where(function (Builder $query) use ($weekStart, $weekEnd) {
+            $query->where('time_bookmarked', true)->orWhereHas('timeEntries', fn (Builder $entries) => $entries->where('user_id', auth()->id())->whereNotNull('booked_at')->whereBetween('started_at', [$weekStart, $weekEnd]));
+        })->with(['customer', 'project'])->get();
         $availableTimeTickets = $this->tickets()->where('assigned_user_id', auth()->id())->where('time_bookmarked', false)->with(['customer', 'project'])->get();
         $entries = TimeEntry::with(['project', 'task', 'ticket'])->where('user_id', auth()->id())->whereNotNull('booked_at')->latest('started_at')->take(50)->get();
         $activeTimer = TimeEntry::with('ticket')->where('user_id', auth()->id())->whereNull('ended_at')->latest('started_at')->first();
@@ -386,7 +393,6 @@ class Workspace extends Component
         $month = $focus->copy()->startOfMonth();
         $calendarDays = collect(range(0, 41))->map(fn (int $i) => $month->copy()->startOfWeek()->addDays($i));
         $taskWeek = collect(range(0, 6))->map(fn (int $i) => $focus->copy()->startOfWeek()->addDays($i));
-        $weekStart = Carbon::parse($this->weekStart)->startOfWeek();
         $weekDays = collect(range(0, 6))->map(fn (int $i) => $weekStart->copy()->addDays($i));
         $weekEntries = TimeEntry::where('user_id', auth()->id())->whereNotNull('booked_at')->whereBetween('started_at', [$weekStart->copy()->startOfDay(), $weekStart->copy()->endOfWeek()->endOfDay()])->get();
         $users = $this->users()->get();

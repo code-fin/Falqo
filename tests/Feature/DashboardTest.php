@@ -105,6 +105,19 @@ class DashboardTest extends TestCase
             ->call('saveTicketTime')->assertHasErrors(['description' => 'required']);
     }
 
+    public function test_time_tracker_shows_an_unbookmarked_ticket_with_time_in_the_selected_week(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Acme']);
+        $project = Project::create(['customer_id' => $customer->id, 'name' => 'Website']);
+        $ticket = Ticket::create(['customer_id' => $customer->id, 'project_id' => $project->id, 'assigned_user_id' => $user->id, 'time_bookmarked' => false, 'title' => 'Historical ticket']);
+        TimeEntry::create(['user_id' => $user->id, 'project_id' => $project->id, 'ticket_id' => $ticket->id, 'description' => 'Previously booked work.', 'started_at' => now()->startOfWeek()->addHours(9), 'ended_at' => now()->startOfWeek()->addHours(10), 'booked_at' => now()]);
+
+        Livewire::actingAs($user)->test(Workspace::class, ['section' => 'time'])
+            ->assertSee('Historical ticket')
+            ->assertSee('Bookmark for time', false);
+    }
+
     public function test_user_can_add_and_edit_multiple_time_entries_for_the_same_ticket_and_day(): void
     {
         $user = User::factory()->create();
