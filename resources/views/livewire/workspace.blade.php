@@ -9,9 +9,9 @@
     <main class="mx-auto max-w-7xl space-y-7 px-5 py-7 sm:px-8 sm:py-9" wire:loading.class="timesheet-week-loading" wire:target="changeWeek,weekStart">
         <flux:breadcrumbs>
             @if($section==='overview')
-                <flux:breadcrumbs.item icon="home">Dashboard</flux:breadcrumbs.item>
+                <flux:breadcrumbs.item><span class="inline-flex items-center gap-1.5"><flux:icon name="home" variant="solid" class="size-4" />Dashboard</span></flux:breadcrumbs.item>
             @else
-                <flux:breadcrumbs.item :href="route('dashboard')" icon="home" class="transition-colors hover:!text-falqo-600 hover:no-underline" wire:navigate>Dashboard</flux:breadcrumbs.item>
+                <flux:breadcrumbs.item :href="route('dashboard')" wire:navigate><span class="inline-flex items-center gap-1.5"><flux:icon name="home" variant="outline" class="breadcrumb-home-outline size-4" /><flux:icon name="home" variant="solid" class="breadcrumb-home-solid size-4" />Dashboard</span></flux:breadcrumbs.item>
                 @if(isset($detailParents[$section]))
                     <flux:breadcrumbs.item :href="route($sectionRoutes[$detailParents[$section][0]])" class="transition-colors hover:!text-falqo-600 hover:no-underline" wire:navigate>{{ $detailParents[$section][1] }}</flux:breadcrumbs.item>
                 @endif
